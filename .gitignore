@@ -1,0 +1,16 @@
+# nextflow
+work/
+.nextflow*
+
+# python
+.venv/
+
+# local
+results/
+data/
+.env
+refs_mink/
+*.fasta
+*.fa
+*.fastq.gz
+*.fai
