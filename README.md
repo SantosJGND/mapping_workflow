@@ -19,12 +19,6 @@ These are included in the conda environment defined in the `environment.yml` fil
 #### Pipeline Overview
 
 ```mermaid
-<html>
-<head>
-<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
-</head>
-<body>
-<pre class="mermaid" style="text-align: center;">
 flowchart TB
     subgraph " "
     v0["Channel.fromPath"]
@@ -59,12 +53,4 @@ flowchart TB
     v13 --> v19
     v18 --> v19
     v19 --> v20
-
-</pre>
-<script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({ startOnLoad: true, maxTextSize: Number.MAX_SAFE_INTEGER, maxEdges: Number.MAX_SAFE_INTEGER });
-</script>
-</body>
-</html>
 ```
