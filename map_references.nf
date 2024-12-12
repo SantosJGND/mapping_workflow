@@ -4,10 +4,9 @@
 * Nextflow script to map a ONT fastq fils to several references after perforing quality control.
 */
 
-params.output_dir = 'results'
+params.output_dir = '/home/bioinf/Desktop/CODE/INSA/TOOLS/map_to_reference/results'
 params.reads = 'data/*.fastq.gz'
 params.references = 'data/references/*.fa'
-params.home = '/home/bioinf/Desktop/CODE/INSA/TOOLS/map_to_reference'
 params.prinseq_params = '--lc_entropy 0.5 --lc_dust 0.7'
 params.minimap2_params = '-ax map-ont --secondary=no'
 
@@ -71,12 +70,37 @@ process CompileMappingStatistics {
     val mapping_stats
 
     output:
-    path "${sample_id}_${ref_id}_flagstat.txt"
+    path "${sample_id}_${ref_id}_flagstat.tsv"
 
     script:
     """
-    python3 ${params.home}/utils/extract_mapping_stats.py ${sample_id} ${ref_id} \
-        /${params.output_dir}/mapping_stats/${sample_id}_good.fastq_${ref_id}.txt ${sample_id}_${ref_id}_flagstat.txt
+    #!/usr/bin/env python3
+    import pandas as pd 
+    import os
+    sample = "${sample_id}"
+    reference = "${ref_id}"
+    file = "${params.output_dir}/mapping_stats/${sample_id}_good.fastq_${ref_id}.txt"
+    output = "${sample_id}_${ref_id}_flagstat.tsv"
+
+    output_df = pd.DataFrame()
+    if os.path.exists(output):
+        output_df = pd.read_csv(output, sep="\t")
+
+
+    df = pd.read_csv(file, sep="\t", header=None, names=["value", "qual", "metric"])
+    df["sample"] = sample
+    df["reference"] = reference
+
+    if output_df.empty:
+        output_df = df
+    else:
+        output_df = pd.concat([output_df, df])
+
+    output_df.to_csv(
+        output,
+        index=False,
+        sep="\t",
+    )
     """
 }
 /*
