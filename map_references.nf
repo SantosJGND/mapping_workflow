@@ -7,11 +7,14 @@
 params.output_dir = 'results'
 params.reads = 'data/*.fastq.gz'
 params.references = 'data/references/*.fa'
+params.home = '/home/bioinf/Desktop/CODE/INSA/TOOLS/map_to_reference'
 params.prinseq_params = '--lc_entropy 0.5 --lc_dust 0.7'
 params.minimap2_params = '-ax map-ont --secondary=no'
 
 
 workflow {
+
+    // replace reads and references with command line arguments if provided
 
     Channel
         .fromPath(params.reads)
@@ -72,8 +75,8 @@ process CompileMappingStatistics {
 
     script:
     """
-    python3 /home/bioinf/Desktop/CODE/INSA/TOOLS/map_to_reference/utils/extract_mapping_stats.py ${sample_id} ${ref_id} \
-        /home/bioinf/Desktop/CODE/INSA/TOOLS/map_to_reference/${params.output_dir}/mapping_stats/${sample_id}_good.fastq_${ref_id}.txt combined_tsv.txt
+    python3 ${params.home}/utils/extract_mapping_stats.py ${sample_id} ${ref_id} \
+        /${params.output_dir}/mapping_stats/${sample_id}_good.fastq_${ref_id}.txt ${sample_id}_${ref_id}_flagstat.txt
     """
 }
 /*

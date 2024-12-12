@@ -24,7 +24,7 @@ def compile_flagstat_results(sample, reference, file, output):
 
     output_df.to_csv(
         os.path.join(
-            os.path.dirname(output),
+            output,
             "_".join([sample, reference]) + "_flagstat.tsv",
         ),
         index=False,

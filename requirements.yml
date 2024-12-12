@@ -1,0 +1,11 @@
+name: nextflow_map
+channels:
+  - bioconda
+  - anaconda
+  - conda-forge/label/gcc7
+dependencies:
+  - pandas
+  - minimap2
+  - prinseq-plus-plus
+  - openjdk
+  - samtools
