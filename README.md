@@ -18,6 +18,7 @@ These are included in the conda environment defined in the `environment.yml` fil
 
 #### Pipeline Overview
 
+```mermaid
 <html>
 <head>
 <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
@@ -66,3 +67,4 @@ flowchart TB
 </script>
 </body>
 </html>
+```
