@@ -9,3 +9,4 @@ dependencies:
   - prinseq-plus-plus
   - openjdk
   - samtools
+  - nanofilt

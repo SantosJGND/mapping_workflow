@@ -9,10 +9,10 @@ params.reads = 'data/*.fastq.gz'
 params.references = 'data/references/*.fa'
 params.prinseq_params = '--lc_entropy 0.5 --lc_dust 0.7'
 params.minimap2_params = '-ax map-ont --secondary=no'
+params.nanofilt_params = '-q 8 -l 50 --headcrop 30 --tailcrop 30 --maxlength 50000'
 
 
 workflow {
-
     // replace reads and references with command line arguments if provided
 
     Channel
@@ -28,8 +28,10 @@ workflow {
         .ifEmpty { error('Cannot find any reference file') }
         .set { reference_ch }
 
-
-    qc_channel = QCReadsProxy(reads_ch, params.prinseq_params)
+    // QC PRINSEQ CHANNEL
+    qc_prinseq_channel = QCReadsPrinseq(reads_ch, params.prinseq_params)
+    // QC NANOFILT CHANNEL
+    qc_channel = QCReadsNanofilt(qc_prinseq_channel, params.nanofilt_params)
 
     qc_channel = qc_channel.combine(reference_ch)
 
@@ -103,6 +105,8 @@ process CompileMappingStatistics {
     )
     """
 }
+
+
 /*
 * Map to a reference using minimap2
 */
@@ -112,7 +116,7 @@ process MapMinimap2 {
     publishDir "${params.output_dir}/mapped_reads", mode: 'copy'
 
     input:
-    tuple path(fastq), val(reference_id), path(reference)
+    tuple val(query_id), path(fastq), val(reference_id), path(reference)
     val minimap2_params
 
     output:
@@ -121,6 +125,26 @@ process MapMinimap2 {
     script:
     """
     minimap2 ${minimap2_params} ${reference} ${fastq} | samtools view -bS - > ${fastq}_${reference_id}.bam
+    """
+}
+
+
+/*
+* Quality control of the reads using nanofilt
+*/
+process QCReadsNanofilt {
+    publishDir "${params.output_dir}/qc_reads", mode: 'copy'
+
+    input:
+    tuple val(query_id), path(fastq)
+    val nanofilt_params
+
+    output:
+    tuple val(query_id), path("${query_id}_nfl_good.fastq")
+
+    script:
+    """
+    NanoFilt ${nanofilt_params} ${fastq} > ${query_id}_nfl_good.fastq
     """
 }
 
@@ -138,18 +162,20 @@ process QCReadsProxy {
     val prinseq_params
 
     output:
-    path "${query_id}_good.fastq"
+    tuple val(query_id), path("${query_id}_prinseq_good.fastq")
 
     script:
     """
-    cp ${fastq} ${query_id}_good.fastq
+    cp ${fastq} ${query_id}_prinseq_good.fastq
     """
 }
+
+
 
 /*
 * Quality control of the reads using prinseq++
 */
-process QCReads {
+process QCReadsPrinseq {
     publishDir "${params.output_dir}/qc_reads", mode: 'copy'
     debug true
 
@@ -158,7 +184,7 @@ process QCReads {
     val prinseq_params
 
     output:
-    path "${query_id}_good.fastq"
+    tuple val(query_id), path("${query_id}_good.fastq")
 
     script:
     """

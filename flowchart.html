@@ -24,35 +24,39 @@ flowchart TB
     v0["Channel.fromPath"]
     v3["Channel.fromPath"]
     v6["prinseq_params"]
-    v9["minimap2_params"]
-    v12["Channel.fromPath"]
-    v15["Channel.fromPath"]
+    v8["nanofilt_params"]
+    v11["minimap2_params"]
+    v14["Channel.fromPath"]
+    v17["Channel.fromPath"]
     end
-    v7([QCReadsProxy])
-    v10([MapMinimap2])
-    v11([ExtractMappingStatistics])
-    v19([CompileMappingStatistics])
+    v7([QCReadsPrinseq])
+    v9([QCReadsNanofilt])
+    v12([MapMinimap2])
+    v13([ExtractMappingStatistics])
+    v21([CompileMappingStatistics])
     subgraph " "
-    v20[" "]
+    v22[" "]
     end
     v1(( ))
     v4(( ))
-    v13(( ))
-    v18(( ))
+    v15(( ))
+    v20(( ))
     v0 --> v1
     v3 --> v4
     v6 --> v7
     v1 --> v7
-    v7 --> v4
-    v9 --> v10
-    v4 --> v10
-    v10 --> v11
-    v11 --> v18
+    v7 --> v9
+    v8 --> v9
+    v9 --> v4
+    v11 --> v12
+    v4 --> v12
     v12 --> v13
-    v15 --> v13
-    v13 --> v19
-    v18 --> v19
-    v19 --> v20
+    v13 --> v20
+    v14 --> v15
+    v17 --> v15
+    v15 --> v21
+    v20 --> v21
+    v21 --> v22
 
 </pre>
 <script type="module">
