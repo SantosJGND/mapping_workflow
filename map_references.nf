@@ -29,7 +29,7 @@ workflow {
         .set { reference_ch }
 
     // QC PRINSEQ CHANNEL
-    qc_prinseq_channel = QCReadsPrinseq(reads_ch, params.prinseq_params)
+    qc_prinseq_channel = QCReadsPrinseqDocker(reads_ch, params.prinseq_params)
     // QC NANOFILT CHANNEL
     qc_channel = QCReadsNanofilt(qc_prinseq_channel, params.nanofilt_params)
 
@@ -133,18 +133,18 @@ process MapMinimap2 {
 * Quality control of the reads using nanofilt
 */
 process QCReadsNanofilt {
-    publishDir "${params.output_dir}/qc_reads", mode: 'copy'
+    publishDir "${params.output_dir}/qc_nanofilt_reads", mode: 'copy'
 
     input:
     tuple val(query_id), path(fastq)
     val nanofilt_params
 
     output:
-    tuple val(query_id), path("${query_id}_nfl_good.fastq")
+    tuple val(query_id), path("${query_id}_good.fastq")
 
     script:
     """
-    NanoFilt ${nanofilt_params} ${fastq} > ${query_id}_nfl_good.fastq
+    NanoFilt ${nanofilt_params} ${fastq} > ${query_id}_good.fastq
     """
 }
 
@@ -155,18 +155,18 @@ process QCReadsNanofilt {
 process QCReadsProxy {
     tag "QCReadsProxy ${query_id}"
 
-    publishDir "${params.output_dir}/qc_reads", mode: 'copy'
+    publishDir "${params.output_dir}/qc_proxy_reads", mode: 'copy'
 
     input:
     tuple val(query_id), path(fastq)
     val prinseq_params
 
     output:
-    tuple val(query_id), path("${query_id}_prinseq_good.fastq")
+    tuple val(query_id), path("${query_id}_good.fastq")
 
     script:
     """
-    cp ${fastq} ${query_id}_prinseq_good.fastq
+    cp ${fastq} ${query_id}_good.fastq
     """
 }
 
@@ -176,7 +176,7 @@ process QCReadsProxy {
 * Quality control of the reads using prinseq++
 */
 process QCReadsPrinseq {
-    publishDir "${params.output_dir}/qc_reads", mode: 'copy'
+    publishDir "${params.output_dir}/qc_prinseq_reads", mode: 'copy'
     debug true
 
     input:
@@ -192,6 +192,24 @@ process QCReadsPrinseq {
     """
 }
 
+/*
+* Quality control of the reads using prinseq++ docker image quay.io/biocontainers/prinseq-plus-plus:1.2.4-6--h077b44d_6
+*/
+process QCReadsPrinseqDocker {
+    publishDir "${params.output_dir}/qc_reads", mode: 'copy'
+
+    input:
+    tuple val(query_id), path(fastq)
+    val prinseq_params
+
+    output:
+    tuple val(query_id), path("${query_id}_good.fastq")
+
+    script:
+    """
+    docker run -v ${fastq.oa}:${task.workDir} quay.io/biocontainers/prinseq-plus-plus:1.2.4--h077b44d_6 prinseq++ ${prinseq_params} -fastq ${task.workDir}/${fastq} -out_good ${task.workDir}/${query_id}_good.fastq -out_bad ${query_id}_bad.fastq
+    """
+}
 
 /*
 * Map to a reference using bwa
