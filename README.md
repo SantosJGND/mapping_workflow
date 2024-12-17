@@ -1,8 +1,27 @@
-### ONT Reference Mapping deployment
+# Map References Tool
 
-Map multiple ONT reads to multiple reference genomes using minimap2 and extract mapping statistics.
+This tool is designed to map sequencing reads to reference genomes using Nextflow on the server. It leverages conda for environment management and Nextflow for workflow orchestration.
 
-Currently, the nextflow script needs to be edited to specify the input and output directories, and change the `params` section to specify the parameters for minimap2 and prinseq++ (optional).
+## Prerequisites
+
+Ensure you have the following installed on `genome1`:
+
+- Conda
+- Nextflow
+
+## Usage
+
+To use the tool, run the `map_references` script with the following positional arguments:
+
+1. Path to the reference directory
+2. Path to the FASTQ reads directory
+3. Path to the output directory
+
+### Example
+
+```sh
+map_references /path/to/references /path/to/reads /path/to/output
+```
 
 #### Pipeline Dependencies
 
