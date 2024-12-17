@@ -4,9 +4,15 @@
 * Nextflow script to map a ONT fastq fils to several references after perforing quality control.
 */
 
-params.output_dir = '/home/bioinf/Desktop/CODE/INSA/TOOLS/map_to_reference/results'
-params.reads = 'data/*.fastq.gz'
-params.references = 'data/references/*.fa'
+/*
+*params.output_dir = '/home/bioinf/Desktop/CODE/INSA/TOOLS/map_to_reference/results'
+*params.reads = 'data/*.fastq.gz'
+*params.references = 'data/references/*.fa'
+*/
+
+params.reads = params.reads ?: 'input_reads'
+params.references = params.references ?: 'input_references'
+params.output_dir = params.output ?: 'output'
 params.prinseq_params = '--lc_entropy 0.5 --lc_dust 0.7'
 params.minimap2_params = '-ax map-ont --secondary=no'
 params.nanofilt_params = '-q 8 -l 50 --headcrop 30 --tailcrop 30 --maxlength 50000'
@@ -15,14 +21,14 @@ params.nanofilt_params = '-q 8 -l 50 --headcrop 30 --tailcrop 30 --maxlength 500
 workflow {
 
     Channel
-        .fromPath(params.reads)
+        .fromPath("${params.reads}/*.fastq.gz")
         .map { file -> tuple(file.baseName, file) }
         .ifEmpty { error('Cannot find any fastq file') }
         .set { reads_ch }
 
-    // create a channel with the reference files. Repeat channel for sample in reads_ch
+    // Create a channel for the reference files
     Channel
-        .fromPath(params.references)
+        .fromPath("${params.references}/*.fa")
         .map { file -> tuple(file.baseName, file) }
         .ifEmpty { error('Cannot find any reference file') }
         .set { reference_ch }
@@ -37,24 +43,9 @@ workflow {
     mapping_ch = MapMinimap2(qc_channel, params.minimap2_params)
     extract_channel = ExtractMappingStatistics(mapping_ch)
 
-    // COMPILE MAPPING STATISTICS
-    Channel
-        .fromPath(params.reads)
-        .map { file -> tuple(file.baseName, file) }
-        .ifEmpty { error('Cannot find any fastq file') }
-        .set { new_reads_ch }
+    // COMPILE MAPPING STATISTIC
 
-    Channel
-        .fromPath(params.references)
-        .map { file -> tuple(file.baseName, file) }
-        .set { new_reference_ch }
-
-    // combine keep only first element of each tuple
-    new_reads_ch
-        .combine(new_reference_ch)
-        .set { combined_ch }
-
-    CompileMappingStatistics(combined_ch, extract_channel.collect())
+    CompileMappingStatistics(extract_channel)
 }
 
 
@@ -67,8 +58,7 @@ process CompileMappingStatistics {
     publishDir "${params.output_dir}/mapping_stats", mode: 'copy'
 
     input:
-    tuple val(sample_id), val(sample_path), val(ref_id), val(ref_path)
-    val mapping_stats
+    tuple path(file), val(sample_id), val(ref_id)
 
     output:
     path "${sample_id}_${ref_id}_flagstat.tsv"
@@ -119,7 +109,7 @@ process MapMinimap2 {
     val minimap2_params
 
     output:
-    path "${fastq}_${reference_id}.bam"
+    tuple path("${fastq}_${reference_id}.bam"), val(query_id), val(reference_id)
 
     script:
     """
@@ -221,10 +211,10 @@ process ExtractMappingStatistics {
     publishDir "${params.output_dir}/mapping_stats", mode: 'copy'
 
     input:
-    path bam
+    tuple path(bam), val(query_id), val(reference_id)
 
     output:
-    path "${bam.baseName}.txt"
+    tuple path("${bam.baseName}.txt"), val(query_id), val(reference_id)
 
     script:
     """
