@@ -29,7 +29,7 @@ workflow {
         .set { reference_ch }
 
     // QC PRINSEQ CHANNEL
-    qc_prinseq_channel = QCReadsPrinseqDocker(reads_ch, params.prinseq_params)
+    qc_prinseq_channel = QCReadsPrinseq(reads_ch, params.prinseq_params)
     // QC NANOFILT CHANNEL
     qc_channel = QCReadsNanofilt(qc_prinseq_channel, params.nanofilt_params)
 
@@ -192,24 +192,6 @@ process QCReadsPrinseq {
     """
 }
 
-/*
-* Quality control of the reads using prinseq++ docker image quay.io/biocontainers/prinseq-plus-plus:1.2.4-6--h077b44d_6
-*/
-process QCReadsPrinseqDocker {
-    publishDir "${params.output_dir}/qc_reads", mode: 'copy'
-
-    input:
-    tuple val(query_id), path(fastq)
-    val prinseq_params
-
-    output:
-    tuple val(query_id), path("${query_id}_good.fastq")
-
-    script:
-    """
-    docker run -v ${fastq.oa}:${task.workDir} quay.io/biocontainers/prinseq-plus-plus:1.2.4--h077b44d_6 prinseq++ ${prinseq_params} -fastq ${task.workDir}/${fastq} -out_good ${task.workDir}/${query_id}_good.fastq -out_bad ${query_id}_bad.fastq
-    """
-}
 
 /*
 * Map to a reference using bwa
