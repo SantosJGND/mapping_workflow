@@ -199,7 +199,7 @@ process CompileMappingStatistics {
     import os
     sample = "${sample_id}"
     reference = "${ref_id}"
-    file = "${params.output_dir}/mapping_stats/${sample_id}_good.fastq.gz_${ref_id}.txt"
+    file = "${params.output_dir}/mapping_stats/${sample_id}_good.fastq_${ref_id}.txt"
     output = "${sample_id}_${ref_id}_flagstat.tsv"
 
     output_df = pd.DataFrame()
