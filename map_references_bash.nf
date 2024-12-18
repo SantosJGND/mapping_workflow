@@ -125,7 +125,7 @@ process QCReadsNanofilt {
     publishDir "${params.output_dir}/qc_nanofilt_reads", mode: 'copy'
 
     input:
-    tuple val(query_id), path(fastq)
+    tuple val(query_id), path(fastq), path(bad_fastq)
     val nanofilt_params
 
     output:
@@ -173,7 +173,7 @@ process QCReadsPrinseq {
     val prinseq_params
 
     output:
-    tuple val(query_id), path("${query_id}_good.fastq")
+    tuple val(query_id), path("${query_id}_good.fastq"), path("${query_id}_bad.fastq")
 
     script:
     """

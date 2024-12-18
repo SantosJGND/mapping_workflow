@@ -183,11 +183,12 @@ process QCReadsPrinseq {
     val prinseq_params
 
     output:
-    tuple val(query_id), path("${query_id}_good.fastq")
+    tuple val(query_id), path("${query_id}_good.fastq.gz")
 
     script:
     """
     prinseq++ ${prinseq_params} -fastq ${fastq} -out_good ${query_id}_good.fastq -out_bad ${query_id}_bad.fastq
+    bgzip ${query_id}_good.fastq
     """
 }
 

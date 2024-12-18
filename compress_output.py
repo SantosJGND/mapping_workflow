@@ -13,7 +13,9 @@ def main(output_dir):
     dfs= [pd.read_csv(os.path.join(output_dir, f),  
                       sep = "\t") for f in files]
     df= pd.concat(dfs)
-    df.to_csv(output_dir + "concatenated.tsv")
+    df.to_csv(
+        os.path.join(output_dir, 'flagstat_summary.txt'),
+    )
 
 
 if __name__ == '__main__':
