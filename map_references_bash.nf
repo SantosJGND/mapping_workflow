@@ -33,10 +33,12 @@ workflow {
         .ifEmpty { error('Cannot find any reference file') }
         .set { reference_ch }
 
-    // QC PRINSEQ CHANNEL
-    qc_prinseq_channel = QCReadsPrinseq(reads_ch, params.prinseq_params)
+
     // QC NANOFILT CHANNEL
-    qc_channel = QCReadsNanofilt(qc_prinseq_channel, params.nanofilt_params)
+    qc_nanofilt_channel = QCReadsNanofilt(reads_ch, params.nanofilt_params)
+    // QC PRINSEQ CHANNEL
+    qc_channel = QCReadsPrinseq(qc_nanofilt_channel, params.prinseq_params)
+
 
     qc_channel = qc_channel.combine(reference_ch)
 
@@ -50,9 +52,6 @@ workflow {
 
 
 
-
-
-
 /*
 * Quality control of the reads using nanofilt
 */
@@ -60,7 +59,7 @@ process QCReadsNanofilt {
     publishDir "${params.output_dir}/qc_nanofilt_reads", mode: 'copy'
 
     input:
-    tuple val(query_id), path(fastq), path(bad_fastq)
+    tuple val(query_id), path(fastq)
     val nanofilt_params
 
     output:
@@ -68,7 +67,27 @@ process QCReadsNanofilt {
 
     script:
     """
-    cat ${fastq} NanoFilt ${nanofilt_params} | bgzip > ${query_id}_good.fastq.gz
+    zcat ${fastq} | NanoFilt ${nanofilt_params} | bgzip > ${query_id}_good.fastq.gz
+    """
+}
+
+/*
+* Quality control of the reads using prinseq++
+*/
+process QCReadsPrinseq {
+    publishDir "${params.output_dir}/qc_prinseq_reads", mode: 'copy'
+    debug true
+
+    input:
+    tuple val(query_id), path(fastq)
+    val prinseq_params
+
+    output:
+    tuple val(query_id), path("${query_id}_good.fastq")
+
+    script:
+    """
+    prinseq++ ${prinseq_params} -fastq ${fastq} -out_good ${query_id}_good.fastq -out_bad ${query_id}_bad.fastq
     """
 }
 
@@ -96,25 +115,6 @@ process QCReadsProxy {
 
 
 
-/*
-* Quality control of the reads using prinseq++
-*/
-process QCReadsPrinseq {
-    publishDir "${params.output_dir}/qc_prinseq_reads", mode: 'copy'
-    debug true
-
-    input:
-    tuple val(query_id), path(fastq)
-    val prinseq_params
-
-    output:
-    tuple val(query_id), path("${query_id}_good.fastq"), path("${query_id}_bad.fastq")
-
-    script:
-    """
-    prinseq++ ${prinseq_params} -fastq ${fastq} -out_good ${query_id}_good.fastq -out_bad ${query_id}_bad.fastq
-    """
-}
 
 
 /*
@@ -199,7 +199,7 @@ process CompileMappingStatistics {
     import os
     sample = "${sample_id}"
     reference = "${ref_id}"
-    file = "${params.output_dir}/mapping_stats/${sample_id}_good.fastq_${ref_id}.txt"
+    file = "${params.output_dir}/mapping_stats/${sample_id}_good.fastq.gz_${ref_id}.txt"
     output = "${sample_id}_${ref_id}_flagstat.tsv"
 
     output_df = pd.DataFrame()
