@@ -49,73 +49,8 @@ workflow {
 }
 
 
-/*
-* Extract mapping statistics to single file using python
-*/
-process CompileMappingStatistics {
-    tag "CompileMappingStatistics"
-
-    publishDir "${params.output_dir}/mapping_stats", mode: 'copy'
-
-    input:
-    tuple path(file), val(sample_id), val(ref_id)
-
-    output:
-    path "${sample_id}_${ref_id}_flagstat.tsv"
-
-    script:
-    """
-    #!/usr/bin/env python3
-    import pandas as pd 
-    import os
-    sample = "${sample_id}"
-    reference = "${ref_id}"
-    file = "${params.output_dir}/mapping_stats/${sample_id}_good.fastq_${ref_id}.txt"
-    output = "${sample_id}_${ref_id}_flagstat.tsv"
-
-    output_df = pd.DataFrame()
-    if os.path.exists(output):
-        output_df = pd.read_csv(output, sep="\t")
 
 
-    df = pd.read_csv(file, sep="\t", header=None, names=["value", "qual", "metric"])
-    df["sample"] = sample
-    df["reference"] = reference
-
-    if output_df.empty:
-        output_df = df
-    else:
-        output_df = pd.concat([output_df, df])
-
-    output_df.to_csv(
-        output,
-        index=False,
-        sep="\t",
-    )
-    """
-}
-
-
-/*
-* Map to a reference using minimap2
-*/
-process MapMinimap2 {
-    tag "MapMinimap2 ${fastq} ${reference_id}"
-
-    publishDir "${params.output_dir}/mapped_reads", mode: 'copy'
-
-    input:
-    tuple val(query_id), path(fastq), val(reference_id), path(reference)
-    val minimap2_params
-
-    output:
-    tuple path("${fastq}_${reference_id}.bam"), val(query_id), val(reference_id)
-
-    script:
-    """
-    minimap2 ${minimap2_params} ${reference} ${fastq} | samtools view -bS - > ${fastq}_${reference_id}.bam
-    """
-}
 
 
 /*
@@ -129,11 +64,11 @@ process QCReadsNanofilt {
     val nanofilt_params
 
     output:
-    tuple val(query_id), path("${query_id}_good.fastq")
+    tuple val(query_id), path("${query_id}_good.fastq.gz")
 
     script:
     """
-    NanoFilt ${nanofilt_params} ${fastq} > ${query_id}_good.fastq
+    cat ${fastq} NanoFilt ${nanofilt_params} | bgzip > ${query_id}_good.fastq.gz
     """
 }
 
@@ -183,6 +118,26 @@ process QCReadsPrinseq {
 
 
 /*
+* Map to a reference using minimap2
+*/
+process MapMinimap2 {
+    tag "MapMinimap2 ${fastq} ${reference_id}"
+
+    publishDir "${params.output_dir}/mapped_reads", mode: 'copy'
+
+    input:
+    tuple val(query_id), path(fastq), val(reference_id), path(reference)
+    val minimap2_params
+
+    output:
+    tuple path("${fastq}_${reference_id}.bam"), val(query_id), val(reference_id)
+
+    script:
+    """
+    minimap2 ${minimap2_params} ${reference} ${fastq} | samtools view -bS - > ${fastq}_${reference_id}.bam
+    """
+}
+/*
 * Map to a reference using bwa
 */
 process MapBWAMem {
@@ -219,5 +174,52 @@ process ExtractMappingStatistics {
     script:
     """
     samtools flagstat -O tsv ${bam} > ${bam.baseName}.txt
+    """
+}
+
+
+/*
+* Extract mapping statistics to single file using python
+*/
+process CompileMappingStatistics {
+    tag "CompileMappingStatistics"
+
+    publishDir "${params.output_dir}/mapping_stats", mode: 'copy'
+
+    input:
+    tuple path(file), val(sample_id), val(ref_id)
+
+    output:
+    path "${sample_id}_${ref_id}_flagstat.tsv"
+
+    script:
+    """
+    #!/usr/bin/env python3
+    import pandas as pd 
+    import os
+    sample = "${sample_id}"
+    reference = "${ref_id}"
+    file = "${params.output_dir}/mapping_stats/${sample_id}_good.fastq_${ref_id}.txt"
+    output = "${sample_id}_${ref_id}_flagstat.tsv"
+
+    output_df = pd.DataFrame()
+    if os.path.exists(output):
+        output_df = pd.read_csv(output, sep="\t")
+
+
+    df = pd.read_csv(file, sep="\t", header=None, names=["value", "qual", "metric"])
+    df["sample"] = sample
+    df["reference"] = reference
+
+    if output_df.empty:
+        output_df = df
+    else:
+        output_df = pd.concat([output_df, df])
+
+    output_df.to_csv(
+        output,
+        index=False,
+        sep="\t",
+    )
     """
 }
