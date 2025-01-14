@@ -45,7 +45,7 @@ These are included in the conda environment defined in the `environment.yml` fil
 
 ### Pipeline Overview
 
-#### Trimmomatic
+#### Illumina
 
 ```mermaid
 flowchart TB
