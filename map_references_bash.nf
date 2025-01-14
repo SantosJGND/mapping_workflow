@@ -254,6 +254,8 @@ process CompileMappingStatistics {
     df = pd.read_csv(file, sep="\t", header=None, names=["value", "qual", "metric"])
     df["sample"] = sample
     df["reference"] = reference
+    print(df)
+    print(output_df)
 
     if output_df.empty:
         output_df = df
