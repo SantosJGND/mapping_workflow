@@ -50,8 +50,8 @@ These are included in the conda environment defined in the `environment.yml` fil
 ```mermaid
 flowchart TB
     subgraph " "
-    v0["Channel.fromPath"]
-    v3["Channel.fromPath"]
+    v0["FASTQ.GZ"]
+    v3["REFERENCE.FA"]
     v6["trimmomatic_params"]
     v8["prinseq_params"]
     v11["minimap2_params"]
@@ -85,8 +85,8 @@ flowchart TB
 ```mermaid
 flowchart TB
     subgraph " "
-    v0["Channel.fromPath"]
-    v3["Channel.fromPath"]
+    v0["FASTQ.GZ"]
+    v3["REFERENCE.FA"]
     v6["nanofilt_params"]
     v8["prinseq_params"]
     v11["minimap2_params"]
