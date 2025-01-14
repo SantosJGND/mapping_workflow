@@ -29,7 +29,7 @@ workflow {
 
     // Create a channel for the reference files
     Channel
-        .fromPath("${params.references}/*.fa")
+        .fromPath(["${params.references}/*.fa", "${params.references}/*.fasta", "${params.references}/*.fna", "${params.references}/*.fna.gz"])
         .map { file -> tuple(file.baseName, file) }
         .ifEmpty { error('Cannot find any reference file') }
         .set { reference_ch }
