@@ -9,14 +9,15 @@
 *params.reads = 'data/*.fastq.gz'
 *params.references = 'data/references/*.fa'
 */
-
+params.technology = 'nanopore'
 params.reads = params.reads ?: 'input_reads'
 params.references = params.references ?: 'input_references'
 params.output_dir = params.output ?: 'output'
 params.prinseq_params = '--lc_entropy 0.5 --lc_dust 0.7'
-params.minimap2_params = '-ax map-ont --secondary=no'
+params.minimap2_nanopore_params = '-ax map-ont --secondary=no'
+params.minimap2_illumina_params = '-ax sr'
 params.nanofilt_params = '-q 8 -l 50 --headcrop 30 --tailcrop 30 --maxlength 50000'
-
+params.trimmomatic_params = 'SLIDINGWINDOW:5:20 LEADING:3 TRAILING:3 MINLEN:35 TOPHRED33'
 
 workflow {
 
@@ -34,22 +35,44 @@ workflow {
         .set { reference_ch }
 
 
+
+    if (params.technology == 'nanopore') {
+        // QC NANOFILT CHANNEL
+        qc_channel = QCReadsNanofilt(reads_ch, params.nanofilt_params)
+    }
+    else if (params.technology == 'illumina') {
+        // QC TRIMMOMATIC CHANNEL
+        qc_channel = QCReadsTrimmomaticSE(reads_ch, params.trimmomatic_params)
+    }
+    else {
+        error('Unknown technology')
+    }
     // QC NANOFILT CHANNEL
-    qc_nanofilt_channel = QCReadsNanofilt(reads_ch, params.nanofilt_params)
+    // qc_nanofilt_channel = QCReadsNanofilt(reads_ch, params.nanofilt_params)
     // QC PRINSEQ CHANNEL
-    qc_channel = QCReadsPrinseq(qc_nanofilt_channel, params.prinseq_params)
+    qc_channel = QCReadsPrinseq(qc_channel, params.prinseq_params)
 
 
     qc_channel = qc_channel.combine(reference_ch)
 
-    mapping_ch = MapMinimap2(qc_channel, params.minimap2_params)
+    // MAP TO REFERENCE CHANNEL
+    if (params.technology == 'nanopore') {
+        mapping_ch = MapMinimap2(qc_channel, params.minimap2_nanopore_params)
+    }
+    else if (params.technology == 'illumina') {
+        mapping_ch = MapMinimap2(qc_channel, params.minimap2_illumina_params)
+    }
+    else {
+        error('Unknown technology')
+    }
+
+    //mapping_ch = MapMinimap2(qc_channel, params.minimap2_nanopore_params)
     extract_channel = ExtractMappingStatistics(mapping_ch)
 
     // COMPILE MAPPING STATISTIC
 
     CompileMappingStatistics(extract_channel)
 }
-
 
 
 /*
@@ -63,11 +86,30 @@ process QCReadsNanofilt {
     val nanofilt_params
 
     output:
+    tuple val(query_id), path("${query_id}_nf_good.fastq.gz")
+
+    script:
+    """
+    zcat ${fastq} | NanoFilt ${nanofilt_params} | bgzip > ${query_id}_nf_good.fastq.gz
+    """
+}
+
+/* 
+* Quality control of the reads using Trimmomatic
+*/
+process QCReadsTrimmomaticSE {
+    publishDir "${params.output_dir}/qc_trimmomatic_reads", mode: 'copy'
+
+    input:
+    tuple val(query_id), path(fastq)
+    val trimmomatic_params
+
+    output:
     tuple val(query_id), path("${query_id}_good.fastq.gz")
 
     script:
     """
-    zcat ${fastq} | NanoFilt ${nanofilt_params} | bgzip > ${query_id}_good.fastq.gz
+    trimmomatic SE -phred33 ${fastq} ${query_id}_good.fastq.gz ${trimmomatic_params}
     """
 }
 
@@ -83,11 +125,13 @@ process QCReadsPrinseq {
     val prinseq_params
 
     output:
-    tuple val(query_id), path("${query_id}_good.fastq")
+    tuple val(query_id), path("${query_id}_good.fastq.gz"), path("${query_id}_bad.fastq.gz")
 
     script:
     """
     prinseq++ ${prinseq_params} -fastq ${fastq} -out_good ${query_id}_good.fastq -out_bad ${query_id}_bad.fastq
+    bgzip ${query_id}_good.fastq
+    bgzip ${query_id}_bad.fastq
     """
 }
 
@@ -126,7 +170,7 @@ process MapMinimap2 {
     publishDir "${params.output_dir}/mapped_reads", mode: 'copy'
 
     input:
-    tuple val(query_id), path(fastq), val(reference_id), path(reference)
+    tuple val(query_id), path(fastq), path(fastq_bad), val(reference_id), path(reference)
     val minimap2_params
 
     output:
@@ -199,7 +243,7 @@ process CompileMappingStatistics {
     import os
     sample = "${sample_id}"
     reference = "${ref_id}"
-    file = "${params.output_dir}/mapping_stats/${sample_id}_good.fastq_${ref_id}.txt"
+    file = "${params.output_dir}/mapping_stats/${sample_id}_good.fastq.gz_${ref_id}.txt"
     output = "${sample_id}_${ref_id}_flagstat.tsv"
 
     output_df = pd.DataFrame()

@@ -15,6 +15,7 @@ def main(output_dir):
     df= pd.concat(dfs)
     df.to_csv(
         os.path.join(output_dir, 'flagstat_summary.txt'),
+        sep = "\t",
     )
 
 
