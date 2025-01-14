@@ -7,6 +7,7 @@ dependencies:
   - pandas
   - minimap2
   - prinseq-plus-plus
+  - trimmomatic
   - openjdk
   - samtools
   - nanofilt

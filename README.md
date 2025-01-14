@@ -2,6 +2,14 @@
 
 This tool is designed to map sequencing reads to reference genomes using Nextflow on the server. It leverages conda for environment management and Nextflow for workflow orchestration.
 
+The default use case is to map Nanopore reads, with preprocessing using Nanofilt. However, through the argument `--technology` the user can specify `illumina` to map Illumina reads, with preprocessing using Trimmomatic. The tool will then use Minimap2 to map the reads to the reference genome in both cases.
+
+### Outputs
+
+The tool outputs a TSV file with the concatenated mapping statistics for all samples across all references (`samtools flagstat` output), in the output /mapping_stats directory.
+
+The tool also outputs a report.html file on resource usage in the output directory.
+
 ## Prerequisites
 
 Ensure you have the following installed on `genome1`:
@@ -15,7 +23,7 @@ To use the tool, run the `map_references` script with the following positional a
 
 1. Path to the reference directory
 2. Path to the FASTQ reads directory
-3. Path to the output directory
+3. FULL PATH to the output directory
 
 ### Example
 
@@ -35,31 +43,29 @@ and the pandas python package.
 
 These are included in the conda environment defined in the `environment.yml` file.
 
-#### Pipeline Overview
+### Pipeline Overview
+
+#### Trimmomatic
 
 ```mermaid
 flowchart TB
     subgraph " "
     v0["Channel.fromPath"]
     v3["Channel.fromPath"]
-    v6["prinseq_params"]
-    v8["nanofilt_params"]
+    v6["trimmomatic_params"]
+    v8["prinseq_params"]
     v11["minimap2_params"]
-    v14["Channel.fromPath"]
-    v17["Channel.fromPath"]
     end
-    v7([QCReadsPrinseq])
-    v9([QCReadsNanofilt])
+    v7([QCReadsTrimmomaticSE])
+    v9([QCReadsPrinseq])
     v12([MapMinimap2])
     v13([ExtractMappingStatistics])
-    v21([CompileMappingStatistics])
+    v14([CompileMappingStatistics])
+    v15([Ouptput])
     subgraph " "
-    v22[" "]
     end
     v1(( ))
     v4(( ))
-    v15(( ))
-    v20(( ))
     v0 --> v1
     v3 --> v4
     v6 --> v7
@@ -70,10 +76,41 @@ flowchart TB
     v11 --> v12
     v4 --> v12
     v12 --> v13
-    v13 --> v20
+    v13 --> v14
     v14 --> v15
-    v17 --> v15
-    v15 --> v21
-    v20 --> v21
-    v21 --> v22
+```
+
+#### Nanopore
+
+```mermaid
+flowchart TB
+    subgraph " "
+    v0["Channel.fromPath"]
+    v3["Channel.fromPath"]
+    v6["nanofilt_params"]
+    v8["prinseq_params"]
+    v11["minimap2_params"]
+    end
+    v7([QCReadsNanoFilt])
+    v9([QCReadsPrinseq])
+    v12([MapMinimap2])
+    v13([ExtractMappingStatistics])
+    v14([CompileMappingStatistics])
+    v15([Ouptput])
+    subgraph " "
+    end
+    v1(( ))
+    v4(( ))
+    v0 --> v1
+    v3 --> v4
+    v6 --> v7
+    v1 --> v7
+    v7 --> v9
+    v8 --> v9
+    v9 --> v4
+    v11 --> v12
+    v4 --> v12
+    v12 --> v13
+    v13 --> v14
+    v14 --> v15
 ```

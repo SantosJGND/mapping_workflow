@@ -47,8 +47,7 @@ workflow {
     else {
         error('Unknown technology')
     }
-    // QC NANOFILT CHANNEL
-    // qc_nanofilt_channel = QCReadsNanofilt(reads_ch, params.nanofilt_params)
+
     // QC PRINSEQ CHANNEL
     qc_channel = QCReadsPrinseq(qc_channel, params.prinseq_params)
 
@@ -105,11 +104,11 @@ process QCReadsTrimmomaticSE {
     val trimmomatic_params
 
     output:
-    tuple val(query_id), path("${query_id}_good.fastq.gz")
+    tuple val(query_id), path("${query_id}_tm_good.fastq.gz")
 
     script:
     """
-    trimmomatic SE -phred33 ${fastq} ${query_id}_good.fastq.gz ${trimmomatic_params}
+    trimmomatic SE -phred64 ${fastq} ${query_id}_tm_good.fastq.gz ${trimmomatic_params}
     """
 }
 
